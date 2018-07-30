@@ -1,0 +1,2 @@
+provides: pong-client
+requires: keyboard-drv libc_be_mem libpthread libstdc++

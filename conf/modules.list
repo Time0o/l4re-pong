@@ -1,0 +1,49 @@
+modaddr 0x01100000
+
+default-kernel fiasco -serial_esc
+default-bootstrap bootstrap
+
+entry fb-log-demo
+roottask moe rom/fb_log_demo.lua
+module fb_log_demo.lua
+module fb-drv
+module fb-log
+module fb-log-demo-client
+module io
+module l4re
+module ned
+module sigma0
+module x86-fb.io
+module x86-legacy.devs
+
+entry fb-mux-demo
+roottask moe rom/fb_mux_demo.lua
+module fb_mux_demo.lua
+module fb-drv
+module fb-log
+module fb-log-demo-client
+module fb-mux
+module fb-mux-demo-client
+module io
+module keyboard-drv
+module l4re
+module ned
+module sigma0
+module x86-fb.io
+module x86-legacy.devs
+
+entry pong-client-demo
+roottask moe rom/pong_client_demo.lua
+module pong_client_demo.lua
+module fb-drv
+module fb-mux
+module fb-log
+module io
+module keyboard-drv
+module l4re
+module ned
+module pong-client
+module pong-server
+module sigma0
+module x86-fb.io
+module x86-legacy.devs

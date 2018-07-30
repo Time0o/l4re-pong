@@ -1,0 +1,2 @@
+provides: fb-log
+requires: libc_be_mem libstdc++ libgfxbitmap
