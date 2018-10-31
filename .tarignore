@@ -1,9 +1,7 @@
-# VCS files
 .git
 .gitignore
 
-# tarignore
+export.sh
 .tarignore
 
-# L4Re repo
-kpr
+kpr/*

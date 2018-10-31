@@ -5,11 +5,8 @@ if [ $# -ne 1 ]; then
   exit 1
 fi
 
-script_dir="$(dirname "$(readlink -f "$0")")"
-export_file="$1.tar.gz"
-
 tarignore_tmp="$(mktemp)"
-cp "$script_dir/.tarignore" "$tarignore_tmp"
-echo "$export_file" >> "$tarignore_tmp"
+cp .tarignore "$tarignore_tmp"
+echo "$1" >> "$tarignore_tmp"
 
-tar --exclude-from="$tarignore_tmp" -vczf "$export_file" "$script_dir"/*
+tar --exclude-from="$tarignore_tmp" -vczf "$1" *
