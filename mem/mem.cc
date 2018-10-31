@@ -293,8 +293,7 @@ freelist_dump(void)
 }
 
 void *
-malloc(std::size_t size) throw() /* Leaving the exception specifiers in pains me
-                                    greatly but this won't compile otherwise. */
+malloc(std::size_t size) throw()
 {
   if (size == 0u || (sizeof(size_t) > sizeof(long) && size > LONG_MAX))
     {
