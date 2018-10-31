@@ -10,7 +10,7 @@ Several servers also produce graphical log output via a framebuffer log server.
 The framebuffer log server's graphical output is multiplexed with the pong
 servers graphical output via a framebuffer multiplexer server which is
 connected to another client also controlled via keyboard. Per default the
-'ENTER' key switches between the pong game and the graphical console, this can
+'c' key switches between the pong game and the graphical console, this can
 also be customized.
 
 --]]
@@ -97,8 +97,8 @@ ld:start(
     },
     log = {'pong-cli', 'magenta'}
   },
-  'rom/pong-client --paddle-left-up=s --paddle-left-down=a '..
-  '--paddle-right-up=m --paddle-right-down=n --switch-console=c --lifes=100'
+  'rom/pong-client --paddle-left-up=f --paddle-left-down=d '..
+  '--paddle-right-up=k --paddle-right-down=j --switch-console=c --lifes=100'
 )
 
 ld:start(
