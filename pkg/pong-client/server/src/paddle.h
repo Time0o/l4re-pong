@@ -10,26 +10,28 @@
 
 class Paddle
 {
-enum {Paddle_connect_retry_timeout_ms = 100, Paddle_move_timeout = 10,
-      Paddle_start_pos = 180, Paddle_min_pos = 0, Paddle_max_pos = 1023,
-      Paddle_speed = 10, Paddle_initial_lifes = 5};
+enum {
+  Paddle_min_pos = 0,
+  Paddle_max_pos = 1023,
+  Paddle_speed = 10,
+  Paddle_initial_lifes = 5
+};
 
 public:
-  Paddle(unsigned id, l4_cap_idx_t server_idx, l4_cap_idx_t paddle_idx,
+  Paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
          L4::Cap<Keyboard> const &keyboard_cap,
-         std::string const &key_up, std::string const &key_down);
+         std::string const &key_up, std::string const &key_down)
 
-  bool connected() const { return _connected; }
-  void loop();
+    : _server_cap_idx(server_cap_idx), _paddle_cap_idx(paddle_cap_idx),
+      _keyboard_cap(keyboard_cap), _key_up(key_up), _key_down(key_down) {}
+
+  int move(int current_pos);
 
 private:
-  std::ostream &out() const;
-  std::ostream &err() const;
-
   unsigned _id;
-  bool _connected = false;
 
-  l4_cap_idx_t _server_idx, _paddle_idx;
+  l4_cap_idx_t _server_cap_idx;
+  l4_cap_idx_t _paddle_cap_idx;
   L4::Cap<Keyboard> _keyboard_cap;
 
   std::string _key_up, _key_down;

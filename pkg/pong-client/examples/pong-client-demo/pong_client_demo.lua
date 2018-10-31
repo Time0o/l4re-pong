@@ -23,7 +23,7 @@ local vbus_gui         = ld:new_channel()
 local vbus_fbdrv       = ld:new_channel()
 local fbdrv            = ld:new_channel()
 local fbmux            = ld:new_channel()
-local fblog            = ld:new_channel() -- XXX
+local fblog            = ld:new_channel()
 local virtfb_main      = ld:new_channel()
 local virtfb_secondary = ld:new_channel()
 local keyboard         = ld:new_channel()
@@ -67,8 +67,20 @@ ld:start(
 ld:start(
   {
     caps = {
+      fblog = fblog:svr(),
+      fb    = virtfb_secondary
+    },
+    log = {'log-svr', 'green'}
+  },
+  'rom/fb-log --bg-color=black'
+)
+
+ld:start(
+  {
+    caps = {
       PongServer = pong:svr(),
-      vesa       = virtfb_main
+      vesa       = virtfb_main,
+      fblog      = fblog:create(0, 'pong-svr', 'red')
     },
     log = {'pong-svr', 'blue'}
   },
@@ -78,25 +90,15 @@ ld:start(
 ld:start(
   {
     caps = {
-      fblog = fblog:svr(),
-      fb    = virtfb_secondary
-    },
-    log = {'log-svr', 'green'}
-  },
-  'rom/fb-log --bg-color=blue'
-)
-
-ld:start(
-  {
-    caps = {
       pongserver = pong,
       keyboard   = keyboard,
-      fbmux      = fbmux
+      fbmux      = fbmux,
+      fblog      = fblog:create(0, 'pong-cli', 'green')
     },
     log = {'pong-cli', 'magenta'}
   },
   'rom/pong-client --paddle-left-up=s --paddle-left-down=a '..
-  '--paddle-right-up=m --paddle-right-down=n --switch-console=c'
+  '--paddle-right-up=m --paddle-right-down=n --switch-console=c --lifes=100'
 )
 
 ld:start(
