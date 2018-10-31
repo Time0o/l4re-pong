@@ -18,9 +18,9 @@ cp conf/modules.list "$1/src/l4/conf"
 
 (
   cd "$1/src/l4/conf";
-  ln -s "$(readlink -f ../pkg/fb-log/examples/fb-log-demo/fb_log_demo.lua)" .;
-  ln -s "$(readlink -f ../pkg/fb-mux/examples/fb-mux-demo/fb_mux_demo.lua)" .;
-  ln -s "$(readlink -f ../pkg/pong-client/examples/pong-client-demo/pong_client_demo.lua)" .
+  ln -sf "$(readlink -f ../pkg/fb-log/examples/fb-log-demo/fb_log_demo.lua)" .;
+  ln -sf "$(readlink -f ../pkg/fb-mux/examples/fb-mux-demo/fb_mux_demo.lua)" .;
+  ln -sf "$(readlink -f ../pkg/pong-client/examples/pong-client-demo/pong_client_demo.lua)" .
 )
 
 (
@@ -28,9 +28,9 @@ cp conf/modules.list "$1/src/l4/conf"
   make -j 12
 )
 
-if [ $? -ne 0 ];
+if [ $? -ne 0 ]; then
   exit 1
-fi;
+fi
 
 (
   cd "$1/obj/l4/x86";
