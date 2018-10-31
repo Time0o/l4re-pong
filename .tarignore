@@ -1,0 +1,9 @@
+# VCS files
+.git
+.gitignore
+
+# tarignore
+.tarignore
+
+# L4Re repo
+kpr
