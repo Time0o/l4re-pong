@@ -366,3 +366,28 @@ realloc(void *p, std::size_t size) throw()
 
   return malloc(size);
 }
+
+void *
+calloc(size_t nmemb, size_t size) throw()
+{
+  if (nmemb == 0u || size == 0u)
+    return nullptr;
+
+  if (sizeof(size_t) > sizeof(long) && size > LONG_MAX)
+    {
+      errno = ENOMEM;
+      return nullptr;
+    }
+
+  size_t nmemb_max = static_cast<size_t>(LONG_MAX) / size;
+  if (nmemb > nmemb_max)
+    {
+      errno = ENOMEM;
+      return nullptr;
+    }
+
+  void *ret = malloc(nmemb * size);
+  memset(ret, 0, nmemb * size);
+
+  return ret;
+}
