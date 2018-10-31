@@ -18,7 +18,6 @@ local fbdrv            = ld:new_channel()
 local fbmux            = ld:new_channel()
 local virtfb_main      = ld:new_channel()
 local virtfb_secondary = ld:new_channel()
-local keyboard         = ld:new_channel()
 local fblog_main       = ld:new_channel()
 local fblog_secondary  = ld:new_channel()
 
@@ -102,8 +101,7 @@ ld:start(
 ld:start(
   {
     caps = {
-      fbmux    = fbmux,
-      keyboard = keyboard
+      fbmux = fbmux,
     },
     log = {'mux-cli', 'magenta'}
   },
