@@ -23,8 +23,16 @@ cp conf/modules.list "$1/src/l4/conf"
   ln -s "$(readlink -f ../pkg/pong-client/examples/pong-client-demo/pong_client_demo.lua)" .
 )
 
-cd "$1/obj/l4/x86"
+(
+  cd "$1";
+  make -j 12
+)
 
-make -j 12
+if [ $? -ne 0 ];
+  exit 1
+fi;
 
-make qemu
+(
+  cd "$1/obj/l4/x86";
+  make qemu
+)
