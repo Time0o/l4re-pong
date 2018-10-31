@@ -1,8 +1,8 @@
 #pragma once
 
+#include <l4/re/log>
 #include <l4/sys/capability>
 #include <l4/sys/cxx/ipc_string>
-#include <l4/sys/kobject>
 
 enum {Fb_log_proto = 0x42};
 

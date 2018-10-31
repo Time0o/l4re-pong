@@ -11,7 +11,8 @@
 #include "fb_textbox.h"
 #include "fb_log_session_server.h"
 
-char const* const Fb_log_session_registry = "fblog";
+static char const* const Framebuffer_registry_name = "fb";
+static char const* const Fb_log_session_registry_name = "fblog";
 
 int
 main(int argc, char **argv)
@@ -47,7 +48,9 @@ main(int argc, char **argv)
   auto registry = registry_server.registry();
 
   // Initialize frame buffer textbox.
-  auto fb = L4Re::Env::env()->get_cap<L4Re::Video::Goos>("fb");
+  auto fb =
+    L4Re::Env::env()->get_cap<L4Re::Video::Goos>(Framebuffer_registry_name);
+
   if (!fb.is_valid())
     {
       std::cerr << "Failed to obtain fb capability\n";
@@ -61,7 +64,8 @@ main(int argc, char **argv)
   // Initialize and register log session server.
   Fb_log_session_server session_server(registry_server, fb_textbox);
 
-  auto log = registry->register_obj(&session_server, Fb_log_session_registry);
+  auto log = registry->register_obj(&session_server,
+                                    Fb_log_session_registry_name);
   if (!log.is_valid())
     {
       std::cerr << "Failed to register service\n";
