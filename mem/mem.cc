@@ -295,7 +295,10 @@ freelist_dump(void)
 void *
 malloc(std::size_t size) throw()
 {
-  if (size == 0u || (sizeof(size_t) > sizeof(long) && size > LONG_MAX))
+  if (size == 0u)
+    return nullptr;
+
+  if (sizeof(std::size_t) > sizeof(long) && size > LONG_MAX)
     {
       errno = ENOMEM;
       return nullptr;
@@ -345,7 +348,10 @@ free(void *p) throw()
 void *
 realloc(void *p, std::size_t size) throw()
 {
-  if (size == 0u || (sizeof(size_t) > sizeof(long) && size > LONG_MAX))
+  if (size == 0u)
+    return nullptr;
+
+  if (sizeof(std::size_t) > sizeof(long) && size > LONG_MAX)
     {
       errno = ENOMEM;
       return nullptr;
