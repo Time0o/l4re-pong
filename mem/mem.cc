@@ -232,7 +232,11 @@ freelist_find(long min_avail_size)
           if (!prev_chunk)
             {
               if (!next_chunk) /* Don't give away the last remaining chunk. */
-                return nullptr;
+                {
+                  l4_simple_unlock(&freelist_lock);
+
+                  return nullptr;
+                }
 
               set_prev_chunk(next_chunk, nullptr);
 
