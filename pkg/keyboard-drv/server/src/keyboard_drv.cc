@@ -46,8 +46,6 @@ query_keyboard(Keyboard_server &keyboard_server, L4::Cap<L4::Irq> &irq)
 
   for (;;)
     {
-      l4_sleep(Irq_poll_timeout_ms);
-
       if (l4_error(irq->receive()))
         std::cerr << "Error on IRQ receive\n";
       else
