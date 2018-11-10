@@ -121,7 +121,7 @@ main()
   auto query_keyboard_thread_cap = // Not very elegant but it works.
     L4::Cap<L4::Thread>(pthread_l4_cap(query_keyboard_thread.native_handle()));
 
-  if (l4_error(irq->attach(Irq_thread_label, query_keyboard_thread_cap)))
+  if (l4_error(irq->bind_thread(query_keyboard_thread_cap, Irq_thread_label)))
     {
       std::cerr << "Failed to attach to IRQ\n";
       exit(EXIT_FAILURE);
