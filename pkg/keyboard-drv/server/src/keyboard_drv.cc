@@ -19,7 +19,7 @@
 #include <thread>
 #include <vector>
 
-#include "keyboard_server.h"
+#include "keyboard_session_server.h"
 
 enum {
   Io_port = 0x60, Irq_num = 1,
@@ -27,11 +27,11 @@ enum {
   Irq_poll_timeout_ms = 10
 };
 
-static char const* const Keyboard_server_registry_name = "keyboard";
+static char const* const Keyboard_session_registry_name = "keyboard";
 
 // Query keyboard input.
 static void
-query_keyboard(Keyboard_server &keyboard_server, L4::Cap<L4::Irq> &irq)
+query_keyboard(Keyboard_session_server &session_server, L4::Cap<L4::Irq> &irq)
 {
   std::cout << "Ready to receive keyboard input\n";
 
@@ -57,14 +57,14 @@ query_keyboard(Keyboard_server &keyboard_server, L4::Cap<L4::Irq> &irq)
               auto keycode = keycodes.find(in & 0x7f);
 
               if (keycode != keycodes.end())
-                keyboard_server.release_key(keycode->second);
+                session_server.release_key(keycode->second);
             }
           else
             {
               auto keycode = keycodes.find(in);
 
               if (keycode != keycodes.end())
-                keyboard_server.hold_key(keycode->second);
+                session_server.hold_key(keycode->second);
             }
         }
     }
@@ -101,13 +101,14 @@ main()
     }
 
   // Register service.
-  Keyboard_server keyboard_server;
   L4Re::Util::Registry_server<L4Re::Util::Br_manager_hooks> registry_server;
-
   auto registry = registry_server.registry();
 
-  auto keyboard = registry->register_obj(&keyboard_server,
-                                         Keyboard_server_registry_name);
+  // Initialize and register keyboard session server.
+  Keyboard_session_server session_server(registry_server);
+
+  auto keyboard = registry->register_obj(&session_server,
+                                         Keyboard_session_registry_name);
   if (!keyboard.is_valid())
     {
       std::cerr << "Failed to register service\n";
@@ -115,8 +116,8 @@ main()
     }
 
   // Start IRQ thread and bind IRQ to ICU.
-  std::thread query_keyboard_thread(query_keyboard, std::ref(keyboard_server),
-                                    std::ref(irq));
+  std::thread query_keyboard_thread(query_keyboard,
+                                    std::ref(session_server), std::ref(irq));
 
   auto query_keyboard_thread_cap = // Not very elegant but it works.
     L4::Cap<L4::Thread>(pthread_l4_cap(query_keyboard_thread.native_handle()));

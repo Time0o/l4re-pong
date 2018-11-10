@@ -2,10 +2,13 @@
 
 #include <l4/keyboard-drv/keyboard_drv.h>
 
+#include <l4/sys/capability>
 #include <l4/sys/cxx/ipc_epiface>
 #include <l4/sys/cxx/ipc_string>
-#include <l4/sys/err.h>
+#include <l4/sys/cxx/ipc_types>
+#include <l4/sys/irq>
 
+#include <mutex>
 #include <set>
 #include <string>
 #include <vector>
@@ -16,12 +19,14 @@ public:
   void hold_key(std::string const &key);
   void release_key(std::string const &key);
 
+  int op_map_irq(Keyboard::Rights, L4::Ipc::Snd_fpage const &irq);
   int op_is_held(Keyboard::Rights, L4::Ipc::String<> key, bool &res);
 
 private:
-  bool is_key(std::string const &key) const;
-  bool is_held(std::string const &key);
-  std::vector<std::string> held_keys();
+  void trigger_irqs();
 
+  std::vector<L4::Cap<L4::Irq>> _irqs;
+
+  std::mutex _key_lock;
   std::set<std::string> _held_keys;
 };
