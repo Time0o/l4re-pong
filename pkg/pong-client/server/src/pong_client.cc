@@ -403,9 +403,6 @@ run(int argc, char **argv)
   paddle_left_thread.join();
   paddle_right_thread.join();
   //query_console_switch_thread.join();
-
-  L4Re::Util::cap_alloc.free(paddle_left);
-  L4Re::Util::cap_alloc.free(paddle_right);
 }
 
 }
