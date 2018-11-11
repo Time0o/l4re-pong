@@ -25,64 +25,67 @@ enum : long {
   Inc_max = LONG_MAX - LONG_MAX % static_cast<long>(L4_PAGESIZE)
 };
 
-static char *freelist_head;
-static l4util_simple_lock_t freelist_lock;
+namespace
+{
 
-static long
+char *freelist_head;
+l4util_simple_lock_t freelist_lock;
+
+long
 get_chunk_size(char *chunk)
 {
   return *reinterpret_cast<long *>(chunk) + Freelist_size_sz;
 }
 
-static long
+long
 get_avail_size(char *chunk)
 {
   return *reinterpret_cast<long *>(chunk);
 }
 
-static char *
+char *
 get_prev_chunk(char *chunk)
 {
   return *reinterpret_cast<char **>(chunk + Freelist_prev_ptr_offs);
 }
 
-static char *
+char *
 get_next_chunk(char *chunk)
 {
   return *reinterpret_cast<char **>(chunk + Freelist_next_ptr_offs);
 }
 
-static void *
+void *
 get_buffer(char *chunk)
 {
   return reinterpret_cast<void *>(chunk + Freelist_size_sz);
 }
 
-static char *
+char *
 get_chunk(void *buffer)
 {
   return reinterpret_cast<char *>(buffer) - Freelist_size_sz;
 }
 
-static void
+void
 set_avail_size(char *chunk, long size)
 {
   memcpy(chunk, &size, Freelist_size_sz);
 }
 
-static void
+void
 set_prev_chunk(char *chunk, char *prev)
 {
   memcpy(chunk + Freelist_prev_ptr_offs, &prev, Freelist_prev_ptr_sz);
 }
 
-static void
+void
 set_next_chunk(char *chunk, char *next)
 {
   memcpy(chunk + Freelist_next_ptr_offs, &next, Freelist_next_ptr_sz);
 }
 
-static char *
+char *
 get_new_chunk(long size)
 {
   L4::Cap<L4Re::Dataspace> ds = L4Re::Util::cap_alloc.alloc<L4Re::Dataspace>();
@@ -107,7 +110,7 @@ get_new_chunk(long size)
   return chunk;
 }
 
-static bool
+bool
 coalesce_chunks(char *chunk1, char *chunk2)
 {
   long chunk1_size = get_chunk_size(chunk1);
@@ -130,7 +133,7 @@ coalesce_chunks(char *chunk1, char *chunk2)
   return false;
 }
 
-static void
+void
 freelist_prepend(char *chunk)
 {
   l4_simple_lock(&freelist_lock);
@@ -162,7 +165,7 @@ freelist_prepend(char *chunk)
   l4_simple_unlock(&freelist_lock);
 }
 
-static bool
+bool
 freelist_init(void)
 {
   char *init = get_new_chunk(Inc_min);
@@ -176,7 +179,7 @@ freelist_init(void)
   return true;
 }
 
-static char *
+char *
 freelist_find(long min_avail_size)
 {
   static bool first_call = true;
@@ -264,6 +267,8 @@ freelist_find(long min_avail_size)
   l4_simple_unlock(&freelist_lock);
 
   return nullptr;
+}
+
 }
 
 void
