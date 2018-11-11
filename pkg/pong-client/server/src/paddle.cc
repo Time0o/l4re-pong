@@ -23,7 +23,7 @@ Paddle::move(direction dir)
       _moving = false;
       _move_thread.join();
     }
-  else
+  else if (!_moving)
     {
       _moving = true;
       _move_thread = std::thread(&Paddle::_move, this);
