@@ -10,12 +10,12 @@
 #include <l4/sys/l4int.h>
 #include <l4/util/port_io.h>
 #include <l4/util/util.h>
+#include <pthread-l4.h>
 
 #include <cstdlib>
 #include <functional>
 #include <iostream>
 #include <map>
-#include <pthread-l4.h>
 #include <set>
 #include <string>
 #include <thread>
