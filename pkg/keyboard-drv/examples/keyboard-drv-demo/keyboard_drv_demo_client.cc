@@ -51,8 +51,8 @@ query_keyboard(std::vector<char const *> const &requested_keys,
     }
   catch (L4::Runtime_error const &e)
     {
-      std::cerr << "Keyboard query thread exited with exception: " << e.str()
-                << std::endl;
+      std::cerr << "Keyboard query thread exited with exception: "
+                << e.str() << '\n';
     }
 }
 
@@ -111,12 +111,12 @@ main(int argc, char **argv)
     }
   catch (L4::Runtime_error const &e)
     {
-      std::cerr << e.str() << std::endl;
+      std::cerr << e.str() << '\n';
       exit_status = EXIT_FAILURE;
     }
   catch (...)
     {
-      std::cerr << "Uncaught exception" << std::endl;
+      std::cerr << "Uncaught exception\n";
       exit_status = EXIT_FAILURE;
     }
 

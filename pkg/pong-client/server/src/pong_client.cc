@@ -113,8 +113,7 @@ new_paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
     }
   catch (L4::Runtime_error const &e)
     {
-      std::cerr << "Paddle thread exited with exception: " << e.str()
-                << std::endl;
+      std::cerr << "Paddle thread exited with exception: " << e.str() << '\n';
     }
 }
 
@@ -141,8 +140,8 @@ query_console_switch(L4::Cap<Fb_mux> fbmux,
     }
   catch (L4::Runtime_error const &e)
     {
-      std::cerr << "Console switch thread exited with exception: " << e.str()
-                << std::endl;
+      std::cerr << "Console switch thread exited with exception: "
+                << e.str() << '\n';
     }
 }
 
