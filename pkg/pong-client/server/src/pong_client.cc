@@ -30,10 +30,7 @@ using L4Re::chkcap;
 enum {
   Paddle_connect_retry_timeout_ms = 100,
   Default_lifes = 10,
-  Query_lifes_timeout = 100,
-  Irq_thread_label_paddle_left = 0x1,
-  Irq_thread_label_paddle_right = 0x2,
-  Irq_thread_label_console_switch = 0x3
+  Query_lifes_timeout = 100
 };
 
 namespace
@@ -76,76 +73,77 @@ bind_keyboard_irq(L4::Cap<L4::Irq> const &irq, std::thread &thr, int label)
 }
 
 void
-new_paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
-           L4::Cap<Keyboard> keyboard, L4::Cap<L4::Irq> irq,
-           std::string key_up, std::string key_down)
+query_keyboard(l4_cap_idx_t server_cap_idx,
+               l4_cap_idx_t paddle_left_cap_idx,
+               l4_cap_idx_t paddle_right_cap_idx,
+               L4::Cap<Keyboard> const &keyboard,
+               L4::Cap<L4::Irq> const &keyboard_irq,
+               L4::Cap<Fb_mux> const &fbmux,
+               std::string const &paddle_left_up,
+               std::string const &paddle_left_down,
+               std::string const &paddle_right_up,
+               std::string const &paddle_right_down,
+               std::string const &switch_console)
 {
-  Paddle p(server_cap_idx, paddle_cap_idx, key_up, key_down);
+  Paddle paddle_left(server_cap_idx, paddle_left_cap_idx,
+                     paddle_left_up, paddle_left_down);
 
-  bool key_up_held, key_down_held;
+  Paddle paddle_right(server_cap_idx, paddle_right_cap_idx,
+                      paddle_right_up, paddle_right_down);
 
-  Paddle::direction dir = Paddle::Direction_none;
-  Paddle::direction new_dir = Paddle::Direction_none;
+  Paddle::direction paddle_left_dir = Paddle::Direction_none;
+  Paddle::direction paddle_right_dir = Paddle::Direction_none;
+
+  auto move_paddle = [&](Paddle &paddle, Paddle::direction &dir,
+                         std::string const &key_up, std::string const &key_down)
+  {
+    bool key_up_held, key_down_held;
+
+    Paddle::direction new_dir = Paddle::Direction_none;
+
+    chksys(keyboard->is_held(key_up.c_str(), &key_up_held),
+           "Failed to query keyboard state");
+
+    chksys(keyboard->is_held(key_down.c_str(), &key_down_held),
+           "Failed to query keyboard state");
+
+    if (key_up_held && !key_down_held)
+      new_dir = Paddle::Direction_up;
+    else if (key_down_held && !key_up_held)
+      new_dir = Paddle::Direction_down;
+    else
+      new_dir = Paddle::Direction_none;
+
+    if (new_dir != dir)
+      {
+        dir = new_dir;
+        paddle.move(dir);
+      }
+  };
 
   try
     {
       while (!quit)
         {
-          chksys(irq->receive(), "Failed to receive keyboard IRQ");
+          chksys(keyboard_irq->receive(), "Failed to receive keyboard IRQ");
 
-          key_up_held = key_down_held = false;
+          move_paddle(paddle_left, paddle_left_dir,
+                      paddle_left_up, paddle_left_down);
 
-          chksys(keyboard->is_held(key_up.c_str(), &key_up_held),
+          move_paddle(paddle_right, paddle_right_dir,
+                      paddle_right_up, paddle_right_down);
+
+          bool switch_console_held = false;
+          chksys(keyboard->is_held(switch_console.c_str(), &switch_console_held),
                  "Failed to query keyboard state");
 
-          chksys(keyboard->is_held(key_down.c_str(), &key_down_held),
-                 "Failed to query keyboard state");
-
-          if (key_up_held && !key_down_held)
-            new_dir = Paddle::Direction_up;
-          else if (key_down_held && !key_up_held)
-            new_dir = Paddle::Direction_down;
-          else
-            new_dir = Paddle::Direction_none;
-
-          if (new_dir != dir)
-            {
-              dir = new_dir;
-              p.move(dir);
-            }
-        }
-    }
-  catch (L4::Runtime_error const &e)
-    {
-      std::cerr << "Paddle thread exited with exception: " << e.str() << '\n';
-    }
-}
-
-void
-query_console_switch(L4::Cap<Fb_mux> fbmux,
-                     L4::Cap<Keyboard> keyboard, L4::Cap<L4::Irq> irq,
-                     std::string switch_console)
-{
-  bool key_held;
-
-  try
-    {
-      while (!quit)
-        {
-          chksys(irq->receive(), "Failed to receive keyboard IRQ");
-
-          key_held = false;
-          chksys(keyboard->is_held(switch_console.c_str(), &key_held),
-                 "Failed to query keyboard state");
-
-          if (key_held)
+          if (switch_console_held)
             chksys(fbmux->switch_buffer(), "Failed to switch framebuffer");
         }
     }
   catch (L4::Runtime_error const &e)
     {
-      std::cerr << "Console switch thread exited with exception: "
-                << e.str() << '\n';
+      std::cerr << "Paddle thread exited with exception: " << e.str() << '\n';
     }
 }
 
@@ -301,42 +299,17 @@ run(int argc, char **argv)
   // Print welcome message.
   std::cout << "Welcome to pong!\n";
 
-  // Create left paddle.
-  std::cout << "Starting first paddle thread\n";
+  // Start the game.
+  auto keyboard_irq = create_keyboard_irq(keyboard);
 
-  auto paddle_left_keyboard_irq = create_keyboard_irq(keyboard);
+  std::thread query_keyboard_thread(query_keyboard,
+    server.cap(), paddle_left_cap_idx, paddle_right_cap_idx,
+    keyboard, keyboard_irq, fbmux,
+    paddle_left_up, paddle_left_down,
+    paddle_right_up, paddle_right_down,
+    switch_console);
 
-  std::thread paddle_left_thread(
-    new_paddle, server.cap(), paddle_left_cap_idx,
-    keyboard, paddle_left_keyboard_irq, paddle_left_up, paddle_left_down);
-
-  bind_keyboard_irq(paddle_left_keyboard_irq, paddle_left_thread,
-                    Irq_thread_label_paddle_left);
-
-  // Create right paddle.
-  std::cout << "Starting second paddle thread\n";
-
-  auto paddle_right_keyboard_irq = create_keyboard_irq(keyboard);
-
-  std::thread paddle_right_thread(
-    new_paddle, server.cap(), paddle_right_cap_idx,
-    keyboard, paddle_right_keyboard_irq, paddle_right_up, paddle_right_down);
-
-  bind_keyboard_irq(paddle_right_keyboard_irq, paddle_right_thread,
-                    Irq_thread_label_paddle_right);
-
-//  // Enable console switching.
-//  std::cout << "Enabling console switching\n";
-//
-//  auto query_console_switch_keyboard_irq = create_keyboard_irq(keyboard);
-//
-//  std::thread query_console_switch_thread(
-//    query_console_switch, fbmux,
-//    keyboard, query_console_switch_keyboard_irq, switch_console);
-//
-//  bind_keyboard_irq(query_console_switch_keyboard_irq,
-//                    query_console_switch_thread,
-//                    Irq_thread_label_console_switch);
+  bind_keyboard_irq(keyboard_irq, query_keyboard_thread, 0);
 
   // Periodically query remeaning player lifes.
   auto query_lifes = [](l4_cap_idx_t paddle_cap_idx) -> int
@@ -400,9 +373,7 @@ run(int argc, char **argv)
 
   quit = true;
 
-  paddle_left_thread.join();
-  paddle_right_thread.join();
-  //query_console_switch_thread.join();
+  query_keyboard_thread.join();
 }
 
 }
