@@ -29,23 +29,14 @@ public:
     Direction_down
   };
 
-  Paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
-         std::string const &key_up, std::string const &key_down)
-
-    : _server_cap_idx(server_cap_idx), _paddle_cap_idx(paddle_cap_idx),
-      _key_up(key_up), _key_down(key_down) {}
+  Paddle(l4_cap_idx_t paddle_cap_idx) : _paddle_cap_idx(paddle_cap_idx) {}
 
   void move(direction dir);
 
 private:
   void _move();
 
-  unsigned _id;
-
-  l4_cap_idx_t _server_cap_idx;
   l4_cap_idx_t _paddle_cap_idx;
-
-  std::string _key_up, _key_down;
 
   direction _dir = Direction_none;
   std::mutex _dir_mutex;

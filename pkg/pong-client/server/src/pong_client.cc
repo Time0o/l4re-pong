@@ -73,8 +73,7 @@ bind_keyboard_irq(L4::Cap<L4::Irq> const &irq, std::thread &thr, int label)
 }
 
 void
-query_keyboard(l4_cap_idx_t server_cap_idx,
-               l4_cap_idx_t paddle_left_cap_idx,
+query_keyboard(l4_cap_idx_t paddle_left_cap_idx,
                l4_cap_idx_t paddle_right_cap_idx,
                L4::Cap<Keyboard> const &keyboard,
                L4::Cap<L4::Irq> const &keyboard_irq,
@@ -85,11 +84,8 @@ query_keyboard(l4_cap_idx_t server_cap_idx,
                std::string const &paddle_right_down,
                std::string const &switch_console)
 {
-  Paddle paddle_left(server_cap_idx, paddle_left_cap_idx,
-                     paddle_left_up, paddle_left_down);
-
-  Paddle paddle_right(server_cap_idx, paddle_right_cap_idx,
-                      paddle_right_up, paddle_right_down);
+  Paddle paddle_left(paddle_left_cap_idx);
+  Paddle paddle_right(paddle_right_cap_idx);
 
   Paddle::direction paddle_left_dir = Paddle::Direction_none;
   Paddle::direction paddle_right_dir = Paddle::Direction_none;
@@ -311,10 +307,8 @@ run(int argc, char **argv)
   auto keyboard_irq = create_keyboard_irq(keyboard);
 
   std::thread query_keyboard_thread(query_keyboard,
-    server.cap(), paddle_left_cap_idx, paddle_right_cap_idx,
-    keyboard, keyboard_irq, fbmux,
-    paddle_left_up, paddle_left_down,
-    paddle_right_up, paddle_right_down,
+    paddle_left_cap_idx, paddle_right_cap_idx, keyboard, keyboard_irq, fbmux,
+    paddle_left_up, paddle_left_down, paddle_right_up, paddle_right_down,
     switch_console);
 
   bind_keyboard_irq(keyboard_irq, query_keyboard_thread, 0);
