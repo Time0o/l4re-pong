@@ -16,6 +16,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <mutex>
 #include <string>
 #include <thread>
 
@@ -45,7 +46,8 @@ char const* const Pong_server_registry_name = "pongserver";
 char const* const Keyboard_registry_name = "keyboard";
 char const* const Fb_mux_registry_name = "fbmux";
 
-bool quit = false; // Don't really need a mutex here.
+bool quit = false;
+std::mutex quit_mutex;
 
 L4::Cap<L4::Irq>
 create_keyboard_irq(L4::Cap<Keyboard> const &keyboard)
@@ -120,10 +122,18 @@ query_keyboard(l4_cap_idx_t server_cap_idx,
       }
   };
 
+  bool tmp;
   try
     {
-      while (!quit)
+      for (;;)
         {
+          quit_mutex.lock();
+          tmp = quit;
+          quit_mutex.unlock();
+
+          if (tmp)
+            break;
+
           chksys(keyboard_irq->receive(), "Failed to receive keyboard IRQ");
 
           move_paddle(paddle_left, paddle_left_dir,
@@ -370,7 +380,9 @@ run(int argc, char **argv)
         std::chrono::milliseconds(Query_lifes_timeout));
     }
 
+  quit_mutex.lock();
   quit = true;
+  quit_mutex.unlock();
 
   query_keyboard_thread.join();
 }
