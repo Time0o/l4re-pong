@@ -78,6 +78,18 @@ ld:start(
 ld:start(
   {
     caps = {
+      keyboard = keyboard:svr(),
+      icu      = L4.Env.icu,
+      vbus     = vbus_gui
+    },
+    log = {'kyb-drv', 'yellow'}
+  },
+  'rom/keyboard-drv'
+)
+
+ld:start(
+  {
+    caps = {
       PongServer = pong:svr(),
       vesa       = virtfb_main,
       fblog      = fblog:create(0, 'pong-svr', 'red')
@@ -91,7 +103,7 @@ ld:start(
   {
     caps = {
       pongserver = pong,
-      keyboard   = keyboard,
+      keyboard   = keyboard:create(0, 'D', 'F', 'J', 'K', 'C'),
       fbmux      = fbmux,
       fblog      = fblog:create(0, 'pong-cli', 'green')
     },
@@ -99,16 +111,4 @@ ld:start(
   },
   'rom/pong-client --paddle-left-up=f --paddle-left-down=d '..
   '--paddle-right-up=k --paddle-right-down=j --switch-console=c --lifes=100'
-)
-
-ld:start(
-  {
-    caps = {
-      keyboard = keyboard:svr(),
-      icu      = L4.Env.icu,
-      vbus     = vbus_gui
-    },
-    log = {'kyb-drv', 'yellow'}
-  },
-  'rom/keyboard-drv'
 )

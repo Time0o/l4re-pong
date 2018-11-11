@@ -6,35 +6,68 @@
 #include <l4/sys/types.h>
 #include <l4/util/util.h>
 
-#include <iostream>
 #include <string>
+#include <thread>
 
 #include "paddle.h"
 
-int
-Paddle::move(int current_pos)
+void
+Paddle::move(direction dir)
 {
-  bool key_up_held, key_down_held;
+  _dir_mutex.lock();
+  _dir = dir;
+  _dir_mutex.unlock();
 
-  L4::Ipc::Iostream ios(l4_utcb());
-  ios << 1UL;
-  ios << current_pos;
-  ios.call(_paddle_cap_idx);
+  if (_dir == Direction_none && _moving)
+    {
+      _moving = false;
+      _move_thread.join();
+    }
+  else
+    {
+      _moving = true;
+      _move_thread = std::thread(&Paddle::_move, this);
+    }
+}
 
-  key_up_held = key_down_held = false;
-  _keyboard_cap->is_held(_key_up.c_str(), &key_up_held);
-  _keyboard_cap->is_held(_key_down.c_str(), &key_down_held);
+void
+Paddle::_move()
+{
+  direction tmp;
 
-  if (key_up_held && !key_down_held)
-    current_pos = current_pos - Paddle_speed;
-  else if (key_down_held && !key_up_held)
-    current_pos = current_pos + Paddle_speed;
+  bool stop = false;
 
-  if (current_pos > Paddle_max_pos)
-    current_pos = Paddle_max_pos;
+  while (!stop)
+    {
+      _dir_mutex.lock();
+      tmp = _dir;
+      _dir_mutex.unlock();
 
-  if (current_pos < Paddle_min_pos)
-    current_pos = Paddle_min_pos;
+      if (tmp == Direction_none)
+        break;
 
-  return current_pos;
+      switch (tmp)
+        {
+        case Direction_none:
+          stop = true;
+          break;
+        case Direction_up:
+          _current_pos -= Paddle_speed;
+          if (_current_pos < Paddle_min_pos)
+            _current_pos = Paddle_min_pos;
+          break;
+        case Direction_down:
+          _current_pos += Paddle_speed;
+          if (_current_pos > Paddle_max_pos)
+            _current_pos = Paddle_max_pos;
+          break;
+        }
+
+      L4::Ipc::Iostream ios(l4_utcb());
+      ios << 1UL;
+      ios << _current_pos;
+      ios.call(_paddle_cap_idx);
+
+      l4_sleep(Paddle_move_timeout);
+    }
 }

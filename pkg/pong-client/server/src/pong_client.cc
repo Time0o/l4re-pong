@@ -2,15 +2,20 @@
 #include <l4/keyboard-drv/keyboard_drv.h>
 #include <l4/pong/logging.h>
 
+#include <l4/cxx/exceptions>
 #include <l4/cxx/ipc_stream>
 #include <l4/re/env>
+#include <l4/re/error_helper>
 #include <l4/re/util/cap_alloc>
+#include <l4/sys/irq>
 #include <l4/sys/types.h>
 #include <l4/util/util.h>
+#include <pthread-l4.h>
 
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <set>
 #include <string>
 #include <thread>
 
@@ -18,14 +23,16 @@
 
 #include "paddle.h"
 
+using L4Re::chksys;
+using L4Re::chkcap;
+
 enum {
   Paddle_connect_retry_timeout_ms = 100,
-  Paddle_move_timeout = 10,
-  Paddle_start_pos = 180,
-  Switch_console_read_timeout = 10,
-  Switch_console_cooldown = 100,
   Default_lifes = 10,
-  Query_lifes_timeout = 100
+  Query_lifes_timeout = 100,
+  Irq_thread_label_paddle_left = 0x1,
+  Irq_thread_label_paddle_right = 0x2,
+  Irq_thread_label_console_switch = 0x3
 };
 
 static char const* const Paddle_left_up_default = "F";
@@ -40,41 +47,98 @@ static char const* const Fb_mux_registry_name = "fbmux";
 
 static bool quit = false; // Don't really need a mutex here.
 
+static L4::Cap<L4::Irq>
+create_keyboard_irq(L4::Cap<Keyboard> const &keyboard)
+{
+  auto irq = chkcap(L4Re::Util::cap_alloc.alloc<L4::Irq>(),
+                    "Failed to allocate IRQ capability slot");
+
+  chksys(L4Re::Env::env()->factory()->create(irq),
+         "Failed to create IRQ kernel object");
+
+  chksys(keyboard->map_irq(irq),
+         "Failed to map IRQ capability to keyboard server");
+
+  return irq;
+}
+
+static void
+bind_keyboard_irq(L4::Cap<L4::Irq> const &irq, std::thread &thr, int label)
+{
+  L4::Cap<L4::Thread> thread_cap(pthread_l4_cap(thr.native_handle()));
+
+  chksys(irq->bind_thread(thread_cap, label),
+         "Failed to attach thread to keyboard IRQ");
+}
+
 static void
 new_paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
-           L4::Cap<Keyboard> keyboard, std::string key_up, std::string key_down)
+           L4::Cap<Keyboard> keyboard, L4::Cap<L4::Irq> irq,
+           std::string key_up, std::string key_down)
 {
-  Paddle p(server_cap_idx, paddle_cap_idx, keyboard, key_up, key_down);
+  Paddle p(server_cap_idx, paddle_cap_idx, key_up, key_down);
 
-  int pos = Paddle_start_pos;
+  bool key_up_held, key_down_held;
 
-  while (!quit)
+  Paddle::direction dir = Paddle::Direction_none;
+  Paddle::direction new_dir = Paddle::Direction_none;
+
+  try
     {
-      pos = p.move(pos);
+      while (!quit)
+        {
+          chksys(irq->receive(), "Failed to receive keyboard IRQ");
 
-      l4_sleep(Paddle_move_timeout);
+          key_up_held = key_down_held = false;
+          keyboard->is_held(key_up.c_str(), &key_up_held);
+          keyboard->is_held(key_down.c_str(), &key_down_held);
+
+          if (key_up_held && !key_down_held)
+            new_dir = Paddle::Direction_up;
+          else if (key_down_held && !key_up_held)
+            new_dir = Paddle::Direction_down;
+          else
+            new_dir = Paddle::Direction_none;
+
+          if (new_dir != dir)
+            {
+              dir = new_dir;
+              p.move(dir);
+            }
+        }
+    }
+  catch (L4::Runtime_error const &e)
+    {
+      std::cerr << "Paddle thread exited with exception: " << e.str()
+                << std::endl;
     }
 }
 
 static void
-query_console_switch(std::string switch_console, L4::Cap<Fb_mux> fbmux,
-                     L4::Cap<Keyboard> keyboard)
+query_console_switch(L4::Cap<Fb_mux> fbmux,
+                     L4::Cap<Keyboard> keyboard, L4::Cap<L4::Irq> irq,
+                     std::string switch_console)
 {
-  bool switch_console_held;
+  bool key_held;
 
-  while (!quit)
+  try
     {
-      switch_console_held = false;
-      keyboard->is_held(switch_console.c_str(), &switch_console_held);
-
-      if (switch_console_held)
+      while (!quit)
         {
-          fbmux->switch_buffer();
+          chksys(irq->receive(), "Failed to receive keyboard IRQ");
 
-          l4_sleep(Switch_console_cooldown);
+          key_held = false;
+          chksys(keyboard->is_held(switch_console.c_str(), &key_held),
+                 "Failed to query keyboard state");
+
+          if (key_held)
+            fbmux->switch_buffer();
         }
-
-      l4_sleep(Switch_console_read_timeout);
+    }
+  catch (L4::Runtime_error const &e)
+    {
+      std::cerr << "Console switch thread exited with exception: " << e.str()
+                << std::endl;
     }
 }
 
@@ -188,13 +252,16 @@ main(int argc, char **argv)
       exit(EXIT_FAILURE);
     }
 
-  auto paddle1 = L4Re::Util::cap_alloc.alloc<void>();
-  auto paddle2 = L4Re::Util::cap_alloc.alloc<void>();
-  if (!paddle1.is_valid() || !paddle2.is_valid())
+  auto paddle_left = L4Re::Util::cap_alloc.alloc<void>();
+  auto paddle_right = L4Re::Util::cap_alloc.alloc<void>();
+  if (!paddle_left.is_valid() || !paddle_right.is_valid())
     {
       std::cerr << "Failed to allocate paddle capabilities\n";
       exit(EXIT_FAILURE);
     }
+
+  // Set up keyboard IRQ.
+  std::cout << "Setting up keyboard IRQ\n";
 
   // Connect to pong server.
   std::cout << "Connecting to pong server\n";
@@ -226,18 +293,18 @@ main(int argc, char **argv)
   };
 
   std::cout << "Connecting first paddle\n";
-  auto paddle1_cap_idx = connect_paddle(server, paddle1);
+  auto paddle_left_cap_idx = connect_paddle(server, paddle_left);
 
   std::cout << "Connecting second paddle\n";
-  auto paddle2_cap_idx = connect_paddle(server, paddle2);
+  auto paddle_right_cap_idx = connect_paddle(server, paddle_right);
 
   // Set initial player lifes.
   L4::Ipc::Iostream ios(l4_utcb());
   ios << 2UL;
   ios << lifes;
 
-  if (l4_msgtag_has_error(ios.call(paddle1_cap_idx))
-      || l4_msgtag_has_error(ios.call(paddle2_cap_idx)))
+  if (l4_msgtag_has_error(ios.call(paddle_left_cap_idx))
+      || l4_msgtag_has_error(ios.call(paddle_right_cap_idx)))
     {
       std::cerr << "Failed to set player lifes\n";
       exit(EXIT_FAILURE);
@@ -248,19 +315,42 @@ main(int argc, char **argv)
   // Print welcome message.
   std::cout << "Welcome to pong!\n";
 
-  // Create paddles.
+  // Create left paddle.
   std::cout << "Starting first paddle thread\n";
-  std::thread paddle1_thread(new_paddle, server.cap(), paddle1_cap_idx,
-                             keyboard, paddle_left_up, paddle_left_down);
 
+  auto paddle_left_keyboard_irq = create_keyboard_irq(keyboard);
+
+  std::thread paddle_left_thread(
+    new_paddle, server.cap(), paddle_left_cap_idx,
+    keyboard, paddle_left_keyboard_irq, paddle_left_up, paddle_left_down);
+
+  bind_keyboard_irq(paddle_left_keyboard_irq, paddle_left_thread,
+                    Irq_thread_label_paddle_left);
+
+  // Create right paddle.
   std::cout << "Starting second paddle thread\n";
-  std::thread paddle2_thread(new_paddle, server.cap(), paddle2_cap_idx,
-                             keyboard, paddle_right_up, paddle_right_down);
 
-  // Enable console switching.
-  std::cout << "Enabling console switching\n";
-  std::thread query_console_switch_thread(query_console_switch, switch_console,
-                                          fbmux, keyboard);
+  auto paddle_right_keyboard_irq = create_keyboard_irq(keyboard);
+
+  std::thread paddle_right_thread(
+    new_paddle, server.cap(), paddle_right_cap_idx,
+    keyboard, paddle_right_keyboard_irq, paddle_right_up, paddle_right_down);
+
+  bind_keyboard_irq(paddle_right_keyboard_irq, paddle_right_thread,
+                    Irq_thread_label_paddle_right);
+
+//  // Enable console switching.
+//  std::cout << "Enabling console switching\n";
+//
+//  auto query_console_switch_keyboard_irq = create_keyboard_irq(keyboard);
+//
+//  std::thread query_console_switch_thread(
+//    query_console_switch, fbmux,
+//    keyboard, query_console_switch_keyboard_irq, switch_console);
+//
+//  bind_keyboard_irq(query_console_switch_keyboard_irq,
+//                    query_console_switch_thread,
+//                    Irq_thread_label_console_switch);
 
   // Periodically query remeaning player lifes.
   auto query_lifes = [](l4_cap_idx_t paddle_cap_idx) -> int
@@ -278,8 +368,8 @@ main(int argc, char **argv)
         return -1;
   };
 
-  int paddle1_lifes = 0;
-  int paddle2_lifes = 0;
+  int paddle_left_lifes = 0;
+  int paddle_right_lifes = 0;
   int tmp;
 
   if (endless)
@@ -290,8 +380,8 @@ main(int argc, char **argv)
 
   for (;;)
     {
-      tmp = query_lifes(paddle1_cap_idx);
-      if (tmp != -1 && tmp != paddle1_lifes)
+      tmp = query_lifes(paddle_left_cap_idx);
+      if (tmp != -1 && tmp != paddle_left_lifes)
         {
           std::cout << "Player 1: " << tmp << " lifes remaining\n";
 
@@ -301,11 +391,11 @@ main(int argc, char **argv)
               break;
             }
 
-          paddle1_lifes = tmp;
+          paddle_left_lifes = tmp;
         }
 
-      tmp = query_lifes(paddle2_cap_idx);
-      if (tmp != -1 && tmp != paddle2_lifes)
+      tmp = query_lifes(paddle_right_cap_idx);
+      if (tmp != -1 && tmp != paddle_right_lifes)
         {
           std::cout << "Player 2: " << tmp << " lifes remaining\n";
 
@@ -315,7 +405,7 @@ main(int argc, char **argv)
               break;
             }
 
-          paddle2_lifes = tmp;
+          paddle_right_lifes = tmp;
         }
 
       l4_sleep(Query_lifes_timeout);
@@ -323,12 +413,12 @@ main(int argc, char **argv)
 
   quit = true;
 
-  paddle1_thread.join();
-  paddle2_thread.join();
-  query_console_switch_thread.join();
+  paddle_left_thread.join();
+  paddle_right_thread.join();
+  //query_console_switch_thread.join();
 
-  L4Re::Util::cap_alloc.free(paddle1);
-  L4Re::Util::cap_alloc.free(paddle2);
+  L4Re::Util::cap_alloc.free(paddle_left);
+  L4Re::Util::cap_alloc.free(paddle_right);
 
   exit(EXIT_SUCCESS);
 };
