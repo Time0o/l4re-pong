@@ -20,6 +20,7 @@ cp conf/modules.list "$1/src/l4/conf"
   cd "$1/src/l4/conf";
   ln -sf "$(readlink -f ../pkg/fb-log/examples/fb-log-demo/fb_log_demo.lua)" .;
   ln -sf "$(readlink -f ../pkg/fb-mux/examples/fb-mux-demo/fb_mux_demo.lua)" .;
+  ln -sf "$(readlink -f ../pkg/keyboard-drv/examples/keyboard-drv-demo/keyboard_drv_demo.lua)" .;
   ln -sf "$(readlink -f ../pkg/pong-client/examples/pong-client-demo/pong_client_demo.lua)" .
 )
 

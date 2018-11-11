@@ -32,6 +32,18 @@ module sigma0
 module x86-fb.io
 module x86-legacy.devs
 
+entry keyboard-drv-demo
+roottask moe rom/keyboard_drv_demo.lua
+module keyboard_drv_demo.lua
+module keyboard-drv
+module keyboard-drv-demo-client
+module io
+module l4re
+module ned
+module sigma0
+module x86-fb.io
+module x86-legacy.devs
+
 entry pong-client-demo
 roottask moe rom/pong_client_demo.lua
 module pong_client_demo.lua
