@@ -3,7 +3,7 @@
 Starts a game of pong, i.e. a pong server and a pong client. The pong client
 can be controlled via the keyboard server which it periodically queries for
 held keys. Per default the first paddle is controlled by the 'd' and 'f' and
-the second by the 'h' and 'j' keys, this can be changed via command line options
+the second by the 'j' and 'k' keys, this can be changed via command line options
 as shown below.
 
 Several servers also produce graphical log output via a framebuffer log server.
