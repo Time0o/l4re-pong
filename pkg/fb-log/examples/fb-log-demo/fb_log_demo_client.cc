@@ -4,7 +4,6 @@
 #include <l4/re/env>
 #include <l4/re/error_helper>
 #include <l4/sys/capability>
-#include <l4/sys/err.h>
 
 #include <chrono>
 #include <cstdlib>
@@ -13,6 +12,7 @@
 #include <thread>
 
 using L4Re::chkcap;
+using L4Re::chksys;
 
 enum {Fb_log_timeout = 250};
 
@@ -35,8 +35,7 @@ run()
       std::string msg("hello no. ");
       msg += std::to_string(counter++);
 
-      if (log->log(msg.c_str()) != L4_EOK)
-        std::cerr << "Error while talking to log server\n";
+      chksys(log->log(msg.c_str()), "Error while talking to log server");
     }
 }
 

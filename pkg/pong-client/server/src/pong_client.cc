@@ -94,8 +94,12 @@ new_paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
           chksys(irq->receive(), "Failed to receive keyboard IRQ");
 
           key_up_held = key_down_held = false;
-          keyboard->is_held(key_up.c_str(), &key_up_held);
-          keyboard->is_held(key_down.c_str(), &key_down_held);
+
+          chksys(keyboard->is_held(key_up.c_str(), &key_up_held),
+                 "Failed to query keyboard state");
+
+          chksys(keyboard->is_held(key_down.c_str(), &key_down_held),
+                 "Failed to query keyboard state");
 
           if (key_up_held && !key_down_held)
             new_dir = Paddle::Direction_up;
@@ -135,7 +139,7 @@ query_console_switch(L4::Cap<Fb_mux> fbmux,
                  "Failed to query keyboard state");
 
           if (key_held)
-            fbmux->switch_buffer();
+            chksys(fbmux->switch_buffer(), "Failed to switch framebuffer");
         }
     }
   catch (L4::Runtime_error const &e)
