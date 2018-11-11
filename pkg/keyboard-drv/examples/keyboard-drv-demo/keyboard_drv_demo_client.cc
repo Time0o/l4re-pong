@@ -57,8 +57,12 @@ query_keyboard(std::vector<char const *> const &requested_keys,
 }
 
 void
-run(std::vector<char const *> const &requested_keys)
+run(int argc, char **argv)
 {
+  std::vector<char const *> requested_keys(argc - 1);
+  for (int i = 1; i < argc; ++i)
+    requested_keys[i - 1] = argv[i];
+
   // Obtain keyboard capability.
   auto keyboard =
     chkcap(L4Re::Env::env()->get_cap<Keyboard>(Keyboard_registry_name),
@@ -100,13 +104,9 @@ main(int argc, char **argv)
 {
   int exit_status;
 
-  std::vector<char const *> requested_keys(argc - 1);
-  for (int i = 1; i < argc; ++i)
-    requested_keys[i - 1] = argv[i];
-
   try
     {
-      run(requested_keys);
+      run(argc, argv);
       exit_status = EXIT_SUCCESS;
     }
   catch (L4::Runtime_error const &e)

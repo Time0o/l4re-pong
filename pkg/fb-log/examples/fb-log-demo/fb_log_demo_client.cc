@@ -1,6 +1,8 @@
 #include <l4/fb-log/fb_log.h>
 
+#include <l4/cxx/exceptions>
 #include <l4/re/env>
+#include <l4/re/error_helper>
 #include <l4/sys/capability>
 #include <l4/sys/err.h>
 #include <l4/util/util.h>
@@ -9,18 +11,20 @@
 #include <iostream>
 #include <string>
 
+using L4Re::chkcap;
+
 enum {Fb_log_timeout = 250};
 
-char const *const Fb_Log_session_server_registry_name = "fblog";
-
-int
-main()
+namespace
 {
-  L4::Cap<Fb_log> log =
-    L4Re::Env::env()->get_cap<Fb_log>(Fb_Log_session_server_registry_name);
 
-  if (!log.is_valid())
-    exit(EXIT_FAILURE);
+char const *const Fb_log_session_registry_name = "fblog";
+
+void
+run()
+{
+  auto log = L4Re::Env::env()->get_cap<Fb_log>(Fb_log_session_registry_name);
+  chkcap(log, "Failed to obtain log capability");
 
   int counter = 0;
   for (;;)
@@ -33,6 +37,30 @@ main()
       if (log->log(msg.c_str()) != L4_EOK)
         std::cerr << "Error while talking to log server\n";
     }
+}
 
-  exit(EXIT_SUCCESS);
+}
+
+int
+main()
+{
+  int exit_status;
+
+  try
+    {
+      run();
+      exit_status = EXIT_SUCCESS;
+    }
+  catch (L4::Runtime_error const &e)
+    {
+      std::cerr << e.str() << '\n';
+      exit_status = EXIT_FAILURE;
+    }
+  catch (...)
+    {
+      std::cerr << "Uncaught exception\n";
+      exit_status = EXIT_FAILURE;
+    }
+
+  exit(exit_status);
 }

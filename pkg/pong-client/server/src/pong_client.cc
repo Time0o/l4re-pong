@@ -6,6 +6,7 @@
 #include <l4/cxx/ipc_stream>
 #include <l4/re/env>
 #include <l4/re/error_helper>
+#include <l4/re/error_helper>
 #include <l4/re/util/cap_alloc>
 #include <l4/sys/irq>
 #include <l4/sys/types.h>
@@ -145,10 +146,8 @@ query_console_switch(L4::Cap<Fb_mux> fbmux,
     }
 }
 
-}
-
-int
-main(int argc, char **argv)
+void
+run(int argc, char **argv)
 {
   // Redirect output to framebuffer.
   redirect_to_log(std::cout);
@@ -217,7 +216,7 @@ main(int argc, char **argv)
             catch (std::invalid_argument const &e)
               {
                 std::cerr << "Not a number: " << optarg << '\n';
-                exit(EXIT_FAILURE);
+                throw std::runtime_error("Failed to parse command line arguments");
               }
           }
           break;
@@ -225,48 +224,28 @@ main(int argc, char **argv)
           endless = true;
           break;
         default:
-          exit(EXIT_FAILURE);
+          throw std::runtime_error("Failed to parse command line arguments");
         }
     }
 
   if (argv[optind])
-    {
-      std::cerr << "Trailing command line argument garbage\n";
-      exit(EXIT_FAILURE);
-    }
+    throw std::runtime_error("Trailing command line argument garbage");
 
   // Obtain capabilities.
   auto server = L4Re::Env::env()->get_cap<void>(Pong_server_registry_name);
-  if (!server.is_valid())
-    {
-      std::cerr << "Failed to obtain pong server capability\n";
-      exit(EXIT_FAILURE);
-    }
+  chkcap(server, "Failed to obtain pong server capability");
 
   auto keyboard = L4Re::Env::env()->get_cap<Keyboard>(Keyboard_registry_name);
-  if (!keyboard.is_valid())
-    {
-      std::cerr << "Failed to obtain keyboard capability\n";
-      exit(EXIT_FAILURE);
-    }
+  chkcap(keyboard, "Failed to obtain keyboard capability");
 
   auto fbmux = L4Re::Env::env()->get_cap<Fb_mux>(Fb_mux_registry_name);
-  if (!fbmux.is_valid())
-    {
-      std::cerr << "Failed to obtain framebuffer mux capability\n";
-      exit(EXIT_FAILURE);
-    }
+  chkcap(fbmux, "Failed to obtain framebuffer mux capability");
 
   auto paddle_left = L4Re::Util::cap_alloc.alloc<void>();
-  auto paddle_right = L4Re::Util::cap_alloc.alloc<void>();
-  if (!paddle_left.is_valid() || !paddle_right.is_valid())
-    {
-      std::cerr << "Failed to allocate paddle capabilities\n";
-      exit(EXIT_FAILURE);
-    }
+  chkcap(paddle_left, "Failed to obtain paddle capability");
 
-  // Set up keyboard IRQ.
-  std::cout << "Setting up keyboard IRQ\n";
+  auto paddle_right = L4Re::Util::cap_alloc.alloc<void>();
+  chkcap(paddle_right, "Failed to obtain paddle capability");
 
   // Connect to pong server.
   std::cout << "Connecting to pong server\n";
@@ -287,10 +266,7 @@ main(int argc, char **argv)
             if (l4_utcb_tcr()->error == L4_IPC_ENOT_EXISTENT)
               l4_sleep(Paddle_connect_retry_timeout_ms);
             else
-              {
-                std::cerr << "Failed to connect to paddle\n";
-                exit(EXIT_FAILURE);
-              }
+              throw std::runtime_error("Failed to connect to paddle");
           }
         else
           return paddle_cap_idx;
@@ -311,8 +287,7 @@ main(int argc, char **argv)
   if (l4_msgtag_has_error(ios.call(paddle_left_cap_idx))
       || l4_msgtag_has_error(ios.call(paddle_right_cap_idx)))
     {
-      std::cerr << "Failed to set player lifes\n";
-      exit(EXIT_FAILURE);
+      throw std::runtime_error("Failed to set player lifes");
     }
 
   std::cout << "Set player lifes\n";
@@ -424,6 +399,35 @@ main(int argc, char **argv)
 
   L4Re::Util::cap_alloc.free(paddle_left);
   L4Re::Util::cap_alloc.free(paddle_right);
+}
 
-  exit(EXIT_SUCCESS);
-};
+}
+
+int
+main(int argc, char **argv)
+{
+  int exit_status;
+
+  try
+    {
+      run(argc, argv);
+      exit_status = EXIT_SUCCESS;
+    }
+  catch (L4::Runtime_error const &e)
+    {
+      std::cerr << e.str() << '\n';
+      exit_status = EXIT_FAILURE;
+    }
+  catch (std::runtime_error const &e)
+    {
+      std::cerr << e.what() << '\n';
+      exit_status = EXIT_FAILURE;
+    }
+  catch (...)
+    {
+      std::cerr << "Uncaught exception\n";
+      exit_status = EXIT_FAILURE;
+    }
+
+  exit(exit_status);
+}

@@ -1,4 +1,6 @@
+#include <l4/cxx/exceptions>
 #include <l4/re/env>
+#include <l4/re/error_helper>
 #include <l4/re/util/br_manager>
 #include <l4/re/util/object_registry>
 #include <l4/re/video/goos>
@@ -11,16 +13,16 @@
 #include "fb_textbox.h"
 #include "fb_log_session_server.h"
 
+using L4Re::chkcap;
+
 namespace
 {
 
 char const* const Framebuffer_registry_name = "fb";
 char const* const Fb_log_session_registry_name = "fblog";
 
-}
-
-int
-main(int argc, char **argv)
+void
+run(int argc, char **argv)
 {
   static struct option const long_options[] =
   {
@@ -39,14 +41,11 @@ main(int argc, char **argv)
           break;
         }
       else
-        exit(EXIT_FAILURE);
+        throw std::runtime_error("Failed to parse command line arguments");
     }
 
   if (argv[optind])
-    {
-      std::cerr << "Trailing command line argument garbage\n";
-      exit(EXIT_FAILURE);
-    }
+    throw std::runtime_error("Trailing command line argument garbage");
 
   // Create registry server.
   L4Re::Util::Registry_server<L4Re::Util::Br_manager_hooks> registry_server;
@@ -56,11 +55,7 @@ main(int argc, char **argv)
   auto fb =
     L4Re::Env::env()->get_cap<L4Re::Video::Goos>(Framebuffer_registry_name);
 
-  if (!fb.is_valid())
-    {
-      std::cerr << "Failed to obtain fb capability\n";
-      exit(EXIT_FAILURE);
-    }
+  chkcap(fb, "Failed to obtain fb capability");
 
   Fb_textbox fb_textbox(fb, bg_color);
 
@@ -69,15 +64,41 @@ main(int argc, char **argv)
   // Initialize and register log session server.
   Fb_log_session_server session_server(registry_server, fb_textbox);
 
-  auto log = registry->register_obj(&session_server,
-                                    Fb_log_session_registry_name);
-  if (!log.is_valid())
-    {
-      std::cerr << "Failed to register service\n";
-      exit(EXIT_FAILURE);
-    }
+  chkcap(registry->register_obj(&session_server, Fb_log_session_registry_name),
+         "Failed to register service");
 
   std::cout << "Set up log session service\n";
 
   registry_server.loop();
+}
+
+}
+
+int
+main(int argc, char **argv)
+{
+  int exit_status;
+
+  try
+    {
+      run(argc, argv);
+      exit_status = EXIT_SUCCESS;
+    }
+  catch (L4::Runtime_error const &e)
+    {
+      std::cerr << e.str() << '\n';
+      exit_status = EXIT_FAILURE;
+    }
+  catch (std::runtime_error const &e)
+    {
+      std::cerr << e.what() << '\n';
+      exit_status = EXIT_FAILURE;
+    }
+  catch (...)
+    {
+      std::cerr << "Uncaught exception\n";
+      exit_status = EXIT_FAILURE;
+    }
+
+  exit(exit_status);
 }
