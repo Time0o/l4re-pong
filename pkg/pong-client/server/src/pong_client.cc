@@ -6,7 +6,6 @@
 #include <l4/cxx/ipc_stream>
 #include <l4/re/env>
 #include <l4/re/error_helper>
-#include <l4/re/error_helper>
 #include <l4/re/util/cap_alloc>
 #include <l4/sys/irq>
 #include <l4/sys/types.h>
