@@ -346,6 +346,9 @@ malloc(std::size_t size) throw()
 void
 free(void *p) throw()
 {
+  if (!p)
+    return;
+
   freelist_prepend(get_chunk(p));
 }
 
