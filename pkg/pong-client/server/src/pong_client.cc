@@ -10,9 +10,9 @@
 #include <l4/re/util/cap_alloc>
 #include <l4/sys/irq>
 #include <l4/sys/types.h>
-#include <l4/util/util.h>
 #include <pthread-l4.h>
 
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -263,7 +263,10 @@ run(int argc, char **argv)
         if (l4_msgtag_has_error(ios.call(server.cap())))
           {
             if (l4_utcb_tcr()->error == L4_IPC_ENOT_EXISTENT)
-              l4_sleep(Paddle_connect_retry_timeout_ms);
+              {
+                 std::this_thread::sleep_for(std::chrono::milliseconds(
+                   Paddle_connect_retry_timeout_ms));
+              }
             else
               throw std::runtime_error("Failed to connect to paddle");
           }
@@ -387,7 +390,8 @@ run(int argc, char **argv)
           paddle_right_lifes = tmp;
         }
 
-      l4_sleep(Query_lifes_timeout);
+      std::this_thread::sleep_for(
+        std::chrono::milliseconds(Query_lifes_timeout));
     }
 
   quit = true;

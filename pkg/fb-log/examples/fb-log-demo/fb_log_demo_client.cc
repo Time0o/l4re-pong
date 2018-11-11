@@ -5,11 +5,12 @@
 #include <l4/re/error_helper>
 #include <l4/sys/capability>
 #include <l4/sys/err.h>
-#include <l4/util/util.h>
 
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <thread>
 
 using L4Re::chkcap;
 
@@ -29,7 +30,7 @@ run()
   int counter = 0;
   for (;;)
     {
-      l4_sleep(Fb_log_timeout);
+      std::this_thread::sleep_for(std::chrono::milliseconds(Fb_log_timeout));
 
       std::string msg("hello no. ");
       msg += std::to_string(counter++);

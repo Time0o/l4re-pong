@@ -4,8 +4,8 @@
 #include <l4/sys/capability>
 #include <l4/sys/err.h>
 #include <l4/sys/types.h>
-#include <l4/util/util.h>
 
+#include <chrono>
 #include <string>
 #include <thread>
 
@@ -68,6 +68,7 @@ Paddle::_move()
       ios << _current_pos;
       ios.call(_paddle_cap_idx);
 
-      l4_sleep(Paddle_move_timeout);
+      std::this_thread::sleep_for(
+        std::chrono::milliseconds(Paddle_move_timeout));
     }
 }

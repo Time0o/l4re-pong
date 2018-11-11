@@ -5,10 +5,11 @@
 #include <l4/re/error_helper>
 #include <l4/sys/capability>
 #include <l4/sys/err.h>
-#include <l4/util/util.h>
 
+#include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <thread>
 
 using L4Re::chkcap;
 
@@ -27,7 +28,7 @@ run()
 
   for (;;)
     {
-      l4_sleep(Fb_switch_timeout);
+      std::this_thread::sleep_for(std::chrono::milliseconds(Fb_switch_timeout));
 
       std::cout << "Switching buffers\n";
 
