@@ -9,7 +9,6 @@
 #include <cstring>
 #include <exception>
 #include <iostream>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -17,9 +16,10 @@
 
 #include "fb_textbox.h"
 
-static std::mutex print_lock;
+namespace
+{
 
-static bool
+bool
 gfxcolor(std::string const &name, unsigned *color)
 {
   struct color_rgb {
@@ -51,6 +51,8 @@ gfxcolor(std::string const &name, unsigned *color)
     }
 
   return false;
+}
+
 }
 
 Fb_textbox::Fb_textbox(L4::Cap<L4Re::Video::Goos> fb,
@@ -142,7 +144,7 @@ void Fb_textbox::print_line(std::string const &msg, std::string const &color)
   if (!gfxcolor(color, &text_fg_color))
     gfxcolor(Default_text_fg_color, &text_fg_color);
 
-  print_lock.lock();
+  _print_lock.lock();
 
   if (_current_line == _displayable_lines)
     {
@@ -157,7 +159,7 @@ void Fb_textbox::print_line(std::string const &msg, std::string const &color)
 
   _history.push_back({msg, text_fg_color});
 
-  print_lock.unlock();
+  _print_lock.unlock();
 }
 
 void Fb_textbox::display(std::string const &msg, unsigned color, unsigned line)

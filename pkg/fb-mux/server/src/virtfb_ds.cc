@@ -12,7 +12,10 @@
 
 #include "virtfb_ds.h"
 
-static void swap(l4_addr_t new_addr, l4_addr_t old_addr, unsigned long size)
+namespace
+{
+
+void swap(l4_addr_t new_addr, l4_addr_t old_addr, unsigned long size)
 {
   l4_addr_t page = old_addr;
 
@@ -27,6 +30,8 @@ static void swap(l4_addr_t new_addr, l4_addr_t old_addr, unsigned long size)
 
   memcpy(reinterpret_cast<void *>(new_addr),
          reinterpret_cast<void *>(old_addr), size);
+}
+
 }
 
 Virtfb_ds::Virtfb_ds(L4::Cap<L4Re::Video::Goos> const &goos)

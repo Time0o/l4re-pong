@@ -35,19 +35,22 @@ enum {
   Irq_thread_label_console_switch = 0x3
 };
 
-static char const* const Paddle_left_up_default = "F";
-static char const* const Paddle_left_down_default = "D";
-static char const* const Paddle_right_up_default = "K";
-static char const* const Paddle_right_down_default = "J";
-static char const* const Switch_console_default = "Q";
+namespace
+{
 
-static char const* const Pong_server_registry_name = "pongserver";
-static char const* const Keyboard_registry_name = "keyboard";
-static char const* const Fb_mux_registry_name = "fbmux";
+char const* const Paddle_left_up_default = "F";
+char const* const Paddle_left_down_default = "D";
+char const* const Paddle_right_up_default = "K";
+char const* const Paddle_right_down_default = "J";
+char const* const Switch_console_default = "Q";
 
-static bool quit = false; // Don't really need a mutex here.
+char const* const Pong_server_registry_name = "pongserver";
+char const* const Keyboard_registry_name = "keyboard";
+char const* const Fb_mux_registry_name = "fbmux";
 
-static L4::Cap<L4::Irq>
+bool quit = false; // Don't really need a mutex here.
+
+L4::Cap<L4::Irq>
 create_keyboard_irq(L4::Cap<Keyboard> const &keyboard)
 {
   auto irq = chkcap(L4Re::Util::cap_alloc.alloc<L4::Irq>(),
@@ -62,7 +65,7 @@ create_keyboard_irq(L4::Cap<Keyboard> const &keyboard)
   return irq;
 }
 
-static void
+void
 bind_keyboard_irq(L4::Cap<L4::Irq> const &irq, std::thread &thr, int label)
 {
   L4::Cap<L4::Thread> thread_cap(pthread_l4_cap(thr.native_handle()));
@@ -71,7 +74,7 @@ bind_keyboard_irq(L4::Cap<L4::Irq> const &irq, std::thread &thr, int label)
          "Failed to attach thread to keyboard IRQ");
 }
 
-static void
+void
 new_paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
            L4::Cap<Keyboard> keyboard, L4::Cap<L4::Irq> irq,
            std::string key_up, std::string key_down)
@@ -114,7 +117,7 @@ new_paddle(l4_cap_idx_t server_cap_idx, l4_cap_idx_t paddle_cap_idx,
     }
 }
 
-static void
+void
 query_console_switch(L4::Cap<Fb_mux> fbmux,
                      L4::Cap<Keyboard> keyboard, L4::Cap<L4::Irq> irq,
                      std::string switch_console)
@@ -140,6 +143,8 @@ query_console_switch(L4::Cap<Fb_mux> fbmux,
       std::cerr << "Console switch thread exited with exception: " << e.str()
                 << std::endl;
     }
+}
+
 }
 
 int

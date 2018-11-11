@@ -11,9 +11,12 @@
 #include <string>
 #include <vector>
 
-static char const* const Fb_log_registry_name = "fblog";
+namespace
+{
 
-void redirect_to_log(std::basic_ios<char> &os);
+char const* const Fb_log_registry_name = "fblog";
+
+}
 
 class Log_buffer : public std::basic_streambuf<char>
 {
@@ -46,6 +49,8 @@ private:
   std::stringstream _buffer;
   L4::Cap<Fb_log> _fblog;
 };
+
+void redirect_to_log(std::basic_ios<char> &os);
 
 void redirect_to_log(std::basic_ios<char> &os)
 {

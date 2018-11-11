@@ -10,10 +10,15 @@
 #include "virtfb_ds.h"
 #include "virtfb_server.h"
 
-static char const *const Framebuffer_registry_name = "fb";
-static char const *const Fb_mux_registry_name = "fbmux";
-static char const *const Virtfb_main_registry_name = "virtfb_main";
-static char const *const Virtfb_secondary_registry_name = "virtfb_secondary";
+namespace
+{
+
+char const *const Framebuffer_registry_name = "fb";
+char const *const Fb_mux_registry_name = "fbmux";
+char const *const Virtfb_main_registry_name = "virtfb_main";
+char const *const Virtfb_secondary_registry_name = "virtfb_secondary";
+
+}
 
 int
 main()

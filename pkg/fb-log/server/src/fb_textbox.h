@@ -5,6 +5,7 @@
 #include <l4/re/video/goos>
 #include <l4/sys/capability>
 
+#include <mutex>
 #include <string>
 #include <utility>
 #include <vector>
@@ -52,4 +53,6 @@ private:
   unsigned _displayable_columns;
 
   std::vector<std::pair<std::string, unsigned>> _history;
+
+  std::mutex _print_lock;
 };

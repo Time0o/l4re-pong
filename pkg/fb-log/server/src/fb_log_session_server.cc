@@ -9,7 +9,10 @@
 #include "fb_log_session_server.h"
 #include "fb_textbox.h"
 
-static std::string
+namespace
+{
+
+std::string
 maxlen_string(char const *str, unsigned maxlen)
 {
   unsigned i = 0;
@@ -19,6 +22,8 @@ maxlen_string(char const *str, unsigned maxlen)
     return std::string(str);
   else
     return std::string(str, maxlen);
+}
+
 }
 
 int Fb_log_session_server::op_create(

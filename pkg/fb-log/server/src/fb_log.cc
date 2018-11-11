@@ -11,8 +11,13 @@
 #include "fb_textbox.h"
 #include "fb_log_session_server.h"
 
-static char const* const Framebuffer_registry_name = "fb";
-static char const* const Fb_log_session_registry_name = "fblog";
+namespace
+{
+
+char const* const Framebuffer_registry_name = "fb";
+char const* const Fb_log_session_registry_name = "fblog";
+
+}
 
 int
 main(int argc, char **argv)

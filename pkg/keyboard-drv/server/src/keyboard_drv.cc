@@ -27,10 +27,13 @@ enum {
   Irq_poll_timeout_ms = 10
 };
 
-static char const* const Keyboard_session_registry_name = "keyboard";
+namespace
+{
+
+char const* const Keyboard_session_registry_name = "keyboard";
 
 // Query keyboard input.
-static void
+void
 query_keyboard(Keyboard_session_server &session_server, L4::Cap<L4::Irq> &irq)
 {
   std::cout << "Ready to receive keyboard input\n";
@@ -68,6 +71,8 @@ query_keyboard(Keyboard_session_server &session_server, L4::Cap<L4::Irq> &irq)
             }
         }
     }
+}
+
 }
 
 int
