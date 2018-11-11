@@ -20,7 +20,8 @@ Fb_mux_server::Fb_mux_server(L4::Cap<L4Re::Video::Goos> const &goos,
   _virtfb_ds_main.map(_fb_base_phys);
 }
 
-int Fb_mux_server::op_switch_buffer(Fb_mux::Rights rights)
+int
+Fb_mux_server::op_switch_buffer(Fb_mux::Rights rights)
 {
   (void)rights;
 

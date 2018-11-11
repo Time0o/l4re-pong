@@ -138,7 +138,8 @@ Fb_textbox::Fb_textbox(L4::Cap<L4Re::Video::Goos> fb,
     }
 }
 
-void Fb_textbox::print_line(std::string const &msg, std::string const &color)
+void
+Fb_textbox::print_line(std::string const &msg, std::string const &color)
 {
   unsigned text_fg_color;
   if (!gfxcolor(color, &text_fg_color))
@@ -162,7 +163,8 @@ void Fb_textbox::print_line(std::string const &msg, std::string const &color)
   _print_lock.unlock();
 }
 
-void Fb_textbox::display(std::string const &msg, unsigned color, unsigned line)
+void
+Fb_textbox::display(std::string const &msg, unsigned color, unsigned line)
 {
   unsigned offset = line * _text_font_height;
 
@@ -177,13 +179,15 @@ void Fb_textbox::display(std::string const &msg, unsigned color, unsigned line)
   );
 }
 
-void Fb_textbox::clear_screen()
+void
+Fb_textbox::clear_screen()
 {
   for (unsigned line = 0u; line <= _displayable_lines; ++line)
     display(std::string(_displayable_columns + 1u, ' '), _text_bg_color, line);
 }
 
-void Fb_textbox::scroll_up()
+void
+Fb_textbox::scroll_up()
 {
   unsigned line = _displayable_lines - 2u;
   for (auto hist = 0u; hist < _displayable_lines - 1u; ++hist)

@@ -8,7 +8,8 @@
 
 #include "fb_log_server.h"
 
-int Fb_log_server::op_log(Fb_log::Rights, L4::Ipc::String<> msg)
+int
+Fb_log_server::op_log(Fb_log::Rights, L4::Ipc::String<> msg)
 {
   std::string msg_str(msg.data, msg.length - 1u);
   msg_str = _tag + "| " + msg_str;

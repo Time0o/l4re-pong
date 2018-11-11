@@ -15,7 +15,8 @@
 namespace
 {
 
-void swap(l4_addr_t new_addr, l4_addr_t old_addr, unsigned long size)
+void
+swap(l4_addr_t new_addr, l4_addr_t old_addr, unsigned long size)
 {
   l4_addr_t page = old_addr;
 
@@ -75,14 +76,16 @@ Virtfb_ds::Virtfb_ds(L4::Cap<L4Re::Video::Goos> const &goos)
   _valid = true;
 }
 
-void Virtfb_ds::map(l4_addr_t fb_base_phys)
+void
+Virtfb_ds::map(l4_addr_t fb_base_phys)
 {
   swap(fb_base_phys, _fb_base_swap, _fb_size);
   _ds_start = fb_base_phys;
   _mapped = true;
 }
 
-void Virtfb_ds::unmap()
+void
+Virtfb_ds::unmap()
 {
   swap(_fb_base_swap, _ds_start, _fb_size);
   _ds_start = _fb_base_swap;

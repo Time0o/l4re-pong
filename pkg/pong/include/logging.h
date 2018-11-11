@@ -50,9 +50,11 @@ private:
   L4::Cap<Fb_log> _fblog;
 };
 
-void redirect_to_log(std::basic_ios<char> &os);
+void
+redirect_to_log(std::basic_ios<char> &os);
 
-void redirect_to_log(std::basic_ios<char> &os)
+void
+redirect_to_log(std::basic_ios<char> &os)
 {
   auto fblog = L4Re::Env::env()->get_cap<Fb_log>(Fb_log_registry_name);
   if (!fblog.is_valid())

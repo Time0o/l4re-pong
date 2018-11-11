@@ -26,7 +26,8 @@ maxlen_string(char const *str, unsigned maxlen)
 
 }
 
-int Fb_log_session_server::op_create(
+int
+Fb_log_session_server::op_create(
   L4::Factory::Rights rights, L4::Ipc::Cap<void> &res,
   l4_umword_t type, L4::Ipc::Varg_list<> &&args)
 {
