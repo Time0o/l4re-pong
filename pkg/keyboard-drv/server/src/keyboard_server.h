@@ -26,7 +26,6 @@ private:
   void trigger_irqs();
 
   std::vector<L4::Cap<L4::Irq>> _irqs;
-
-  std::mutex _key_lock;
   std::set<std::string> _held_keys;
+  std::mutex _mutex;
 };

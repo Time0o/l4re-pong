@@ -15,24 +15,24 @@
 void
 Keyboard_server::hold_key(std::string const &key)
 {
-  _key_lock.lock();
+  _mutex.lock();
 
   auto p = _held_keys.insert(key);
   if (p.second)
     trigger_irqs();
 
-  _key_lock.unlock();
+  _mutex.unlock();
 }
 
 void
 Keyboard_server::release_key(std::string const &key)
 {
-  _key_lock.lock();
+  _mutex.lock();
 
   if (_held_keys.erase(key) > 0)
     trigger_irqs();
 
-  _key_lock.unlock();
+  _mutex.unlock();
 }
 
 int
@@ -48,7 +48,9 @@ Keyboard_server::op_map_irq(Keyboard::Rights, L4::Ipc::Snd_fpage const &fpage)
   if (server_iface()->realloc_rcv_cap(0) < 0)
     return -L4_ENOMEM;
 
+  _mutex.lock();
   _irqs.push_back(irq);
+  _mutex.unlock();
 
   return L4_EOK;
 }
@@ -61,9 +63,9 @@ Keyboard_server::op_is_held(Keyboard::Rights, L4::Ipc::String<> key, bool &res)
   for (auto &c : key_str)
     c = std::toupper(c);
 
-  _key_lock.lock();
+  _mutex.lock();
   res = _held_keys.find(key_str) != _held_keys.end();
-  _key_lock.unlock();
+  _mutex.unlock();
 
   return L4_EOK;
 }
