@@ -14,7 +14,7 @@
 class Paddle
 {
 enum {
-  Paddle_start_pos = 180,
+  Paddle_start_pos = 0,
   Paddle_min_pos = 0,
   Paddle_max_pos = 1023,
   Paddle_speed = 10,
