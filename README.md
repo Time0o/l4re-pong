@@ -1,6 +1,38 @@
-TU Dresden _Complex Lab Microkernel-Based Operating Systems_ solution.
+# TU Dresden _Microkernel Operating Systems Lab_ solution
 
-# Installation
+This is my solution to the _Microkernel Operating Systems Lab_ at TU
+Dresden. It mainly consists of implementations of basic memory management
+functions and serval client/server programs for the
+[L4Re](https://github.com/kernkonzept/l4re-core) microkernel operating system
+which together provide enough basic functionality to enable a user to play a
+game of pong via keyboard-input.
+
+The repsitory is structured as follows:
+
+* `mem/mem.cc` contains implementations of the libc `malloc`, `calloc`,
+  `realloc` and `free` functions for L4Re.
+
+* `pkg/fb-log` implements a "framebuffer log" server that allows its client to
+  write log output to the system's physical framebuffer.
+
+* `pkg/fb-mux` implements a "framebuffer multiplexer" server which allows
+  several clients to concurrently access the physical framebuffer.
+
+* `pkg/keyboard-drv` implements a "keyboard driver" server which allows its
+  clients to listen for user keyboard input.
+
+* `pkg/pong-client` implements the main client controlling the flow of the pong
+  session, it talks to an already present pong server which is is responsible
+  for displaying the game and handling ball physics.
+
+* Finally, `pkg/pong/include/logging.h` is a patched version of the pong server
+  logging header which allows redirecting its standard output to a physical or
+  virtual framebuffer.
+
+All programs under `pkg` also contain examples in the form of appropriate dummy
+client programs and demo ned scripts.
+
+## Installation and Startup
 
 You will need (on Linux):
 * `gcc` version 8.\*
