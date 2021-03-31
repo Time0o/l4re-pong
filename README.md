@@ -1,11 +1,14 @@
-# TU Dresden _Microkernel Operating Systems Lab_ solution
+<p align="center">
+  <img width="500" src="preview.jpg">
+</p>
 
-This is my solution to the _Microkernel Operating Systems Lab_ at TU
-Dresden. It mainly consists of implementations of basic memory management
-functions and serval client/server programs for the
-[L4Re](https://github.com/kernkonzept/l4re-core) microkernel operating system
-which together provide enough basic functionality to enable a user to play a
-game of pong via keyboard-input.
+# Pong for L4Re
+
+The game of Pong on the L4Re Microkernel OS.  Mainly consists of
+implementations of basic memory management functions and serval client/server
+programs for the [L4Re](https://github.com/kernkonzept/l4re-core) microkernel
+operating system which together provide enough basic functionality to enable a
+user to play a game of pong via keyboard-input.
 
 The repsitory is structured as follows:
 
